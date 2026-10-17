@@ -9,6 +9,95 @@ const noteCount = document.querySelector("#note-count");
 const notesList = document.querySelector("#notes-list");
 const clearAllBtn = document.querySelector("#clear-all-btn");
 
+// STATE MANAGEMENT & LOCAL STORAGE
+
+let notes = JSON.parse(localStorage.getItem("quicknotes_data")) || [];
+let currentSearch = "";
+
+function saveNotes() {
+  localStorage.setItem("quicknotes_data", JSON.stringify(notes));
+}
+
+// COUNT MESSAGE UPDATER
+function updateCount(count) {
+  if (count === 0) {
+    noteCount.textContent = "You have no notes yet.";
+  } else if (count === 1) {
+    noteCount.textContent = "You have 1 note.";
+  } else {
+    noteCount.textContent = `You have ${count} notes.`;
+  }
+}
+
+// RENDER FUNCTION
+
+function render() {
+  // Clear the existing list safely
+
+  notesList.textContent = "";
+  const query = currentSearch.toLowerCase();
+  const visibleNotes = notes.filter((note) =>
+    note.text.toLowerCase().includes(query)
+  );
+
+  updateCount(notes.length);
+
+  if (visibleNotes.length === 0) {
+    const emptyLi = document.createElement("li");
+    emptyLi.className = "empty-state";
+    emptyLi.textContent =
+      notes.length === 0
+        ? "No notes added yet. Create one above!"
+        : "No notes match your search.";
+    notesList.appendChild(emptyLi);
+    return;
+  }
+
+  // Build note cards
+  visibleNotes.forEach((note) => {
+    const li = document.createElement("li");
+    li.className = `note-card category-${note.category.toLowerCase()}`;
+
+    // Note content paragraph (XSS-safe)
+    const p = document.createElement("p");
+    p.className = "note-text";
+    p.textContent = note.text;
+
+    // Meta container (category, timestamp, delete button)
+    const metaDiv = document.createElement("div");
+    metaDiv.className = "note-meta";
+
+    const infoDiv = document.createElement("div");
+    infoDiv.className = "note-info";
+
+    const categorySpan = document.createElement("span");
+    categorySpan.className = "category-tag";
+    categorySpan.textContent = note.category;
+
+    const dateSpan = document.createElement("span");
+    dateSpan.className = "note-date";
+    dateSpan.textContent = note.createdAt;
+
+    infoDiv.appendChild(categorySpan);
+    infoDiv.appendChild(dateSpan);
+
+    // Delete button
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "delete-btn";
+    deleteBtn.textContent = "Delete";
+    deleteBtn.addEventListener("click", () => deleteNote(note.id));
+
+    metaDiv.appendChild(infoDiv);
+    metaDiv.appendChild(deleteBtn);
+
+    li.appendChild(p);
+    li.appendChild(metaDiv);
+
+    notesList.appendChild(li);
+  });
+}
+
 // ADD NOTE WITH VALIDATION
 
 noteForm.addEventListener("submit", (event) => {
